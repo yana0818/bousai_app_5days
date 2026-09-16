@@ -53,12 +53,11 @@
   .board-table .action-column { width: 132px; text-align: center; }
   .priority {
     display: block;
-    margin: -9px -12px;
-    padding: 9px 12px;
     font-weight: 700;
   }
-  .priority-high { color: #111; background: #ff2424; }
-  .priority-low { background: #f8f8f8; }
+  .board-table td.priority-high { background: #ff2424; }
+  .board-table td.priority-medium { background: #ffd966; }
+  .board-table td.priority-low { background: #f8f8f8; }
   .shelter-name { white-space: nowrap; }
   .detail-link { color: #4e5963; text-decoration: none; }
   .detail-link:hover { text-decoration: underline; }
@@ -107,10 +106,11 @@
           {% for inst in instructions %}
           {% set priority = inst.priority|default('') %}
           {% set is_high_priority = priority == '高' or (not priority and ('土砂災害' in inst.content or '危険' in inst.content)) %}
+          {% set priority_class = 'priority-high' if is_high_priority else ('priority-medium' if priority == '中' else 'priority-low') %}
           <tr>
             <td class="date-column">{{ inst.created_at|default('日時未設定') }}</td>
-            <td class="priority-column">
-              <span class="priority {{ 'priority-high' if is_high_priority else 'priority-low' }}">
+            <td class="priority-column {{ priority_class }}">
+              <span class="priority">
                 {{ priority if priority else ('高' if is_high_priority else '低') }}
               </span>
             </td>
