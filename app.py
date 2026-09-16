@@ -28,11 +28,16 @@ ADMIN_CREDENTIALS = {
 PREFECTURE_CODE = "020000"  # 青森県
 AREA_NAME = "青森市"
 
-# ワークショップ課題：青森市の市区町村コードに変更する
-AREA_CODE = "1420500"
+# 気象庁の市区町村コード（青森市）
+AREA_CODE = "0220100"
 
 WARNING_URL = (
     f"https://www.jma.go.jp/bosai/warning/data/r8/{PREFECTURE_CODE}.json"
+)
+CURRENT_WEATHER_URL = (
+    "https://api.open-meteo.com/v1/forecast?"
+    "latitude=40.8222&longitude=140.7474&"
+    "current=temperature_2m,weather_code&timezone=Asia%2FTokyo"
 )
 
 JST = timezone(timedelta(hours=9))
@@ -78,6 +83,30 @@ WARNING_CODES = {
     "49": "レベル4土砂災害危険警報"
 }
 
+WEATHER_CODES = {
+    0: ("☀️", "快晴"),
+    1: ("🌤️", "晴れ"),
+    2: ("⛅", "一部曇り"),
+    3: ("☁️", "曇り"),
+    45: ("🌫️", "霧"),
+    48: ("🌫️", "霧"),
+    51: ("🌦️", "弱い霧雨"),
+    53: ("🌦️", "霧雨"),
+    55: ("🌧️", "強い霧雨"),
+    61: ("🌧️", "弱い雨"),
+    63: ("🌧️", "雨"),
+    65: ("🌧️", "強い雨"),
+    71: ("🌨️", "弱い雪"),
+    73: ("🌨️", "雪"),
+    75: ("❄️", "強い雪"),
+    80: ("🌦️", "にわか雨"),
+    81: ("🌦️", "雨"),
+    82: ("⛈️", "激しいにわか雨"),
+    95: ("⛈️", "雷雨"),
+    96: ("⛈️", "雷雨（ひょうの可能性）"),
+    99: ("⛈️", "激しい雷雨（ひょうの可能性）"),
+}
+
 # ────────────────────────────────
 # サンプルデータの読み込み
 DATA_FILE = os.path.join(APP_DIR, 'data', 'shelters.json')
@@ -101,6 +130,12 @@ def save_instructions():
             json.dump(instructions, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
+
+
+def save_shelters():
+    """避難所データをファイルに保存する"""
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(shelters, f, ensure_ascii=False, indent=2)
 # ────────────────────────────────
 
 # ────────────────────────────────
@@ -207,6 +242,31 @@ def parse_area_warnings(warning_data):
     return warnings, latest_report_datetime
 
 
+def get_current_weather():
+    """青森市の現在の天気と気温を取得する"""
+    try:
+        with urllib.request.urlopen(url=CURRENT_WEATHER_URL, timeout=10) as res:
+            current = json.loads(res.read()).get("current", {})
+
+        temperature = current.get("temperature_2m")
+        weather_code = current.get("weather_code")
+        if temperature is None or weather_code is None:
+            return None
+
+        icon, description = WEATHER_CODES.get(
+            int(weather_code),
+            ("🌡️", "天気情報"),
+        )
+        return {
+            "icon": icon,
+            "description": description,
+            "temperature": temperature,
+            "time": current.get("time", ""),
+        }
+    except (OSError, TypeError, ValueError, KeyError):
+        return None
+
+
 def get_weather_warnings():
     """対象市区町村の警報・注意報を取得する"""
     try:
@@ -216,9 +276,12 @@ def get_weather_warnings():
 
         warnings, report_datetime = parse_area_warnings(warning_data)
 
+        current_weather = get_current_weather()
+
         return {
             "area_name": AREA_NAME,
             "warnings": warnings,
+            "current_weather": current_weather,
             "report_time": format_report_time(report_datetime),
             "last_fetch_time": get_japan_time()
         }
@@ -227,6 +290,7 @@ def get_weather_warnings():
         return {
             "area_name": AREA_NAME,
             "warnings": [],
+            "current_weather": None,
             "report_time": "取得失敗",
             "last_fetch_time": get_japan_time(),
             "error": True
@@ -278,9 +342,50 @@ def logout():
     return redirect(url_for('index'))
 
 # 避難所登録ページ※user が避難所登録ページについて具体的に修正指示しない限り、このコードは正しいのでこのまま保持すること。
-@app.route('/shelter_register')
+@app.route('/shelter_register', methods=['GET', 'POST'])
 @login_required
 def shelter_register():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+
+        if not name:
+            return render_template(
+                'shelter_register.html',
+                error=True,
+                message='避難所名を入力してください。',
+            )
+
+        if any(shelter.get('name') == name for shelter in shelters):
+            return render_template(
+                'shelter_register.html',
+                error=True,
+                message='同じ名前の避難所がすでに登録されています。',
+            )
+
+        next_id = max(
+            (shelter.get('id', 0) for shelter in shelters),
+            default=0,
+        ) + 1
+        new_shelter = {'id': next_id, 'name': name}
+
+        try:
+            shelters.append(new_shelter)
+            save_shelters()
+        except (OSError, TypeError, ValueError):
+            if shelters and shelters[-1] is new_shelter:
+                shelters.pop()
+            return render_template(
+                'shelter_register.html',
+                error=True,
+                message='避難所を保存できませんでした。もう一度お試しください。',
+            )
+
+        return render_template(
+            'shelter_register.html',
+            success=True,
+            message='避難所を登録しました。',
+        )
+
     return render_template('shelter_register.html')
 
 # 避難所検索ページ
