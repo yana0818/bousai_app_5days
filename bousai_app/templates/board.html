@@ -2,24 +2,132 @@
 
 {% block title %}指示・発信ボード - 防災アプリ{% endblock %}
 
-{% block content %}
-<h2>指示・発信ボード</h2>
-<p>住民向けの発信を登録・確認できます。</p>
+{% block head %}
+<style>
+  .board-page { width: min(100%, 950px); margin: 0 auto; }
+  .board-page h2 { margin-bottom: 8px; }
+  .board-page > p { margin-bottom: 28px; }
+  .board-toolbar { margin-bottom: 22px; }
+  .board-register {
+    display: inline-block;
+    min-width: 145px;
+    padding: 12px 22px;
+    border: 1px solid #aac3db;
+    border-radius: 7px;
+    color: #244268;
+    background: #dcebf7;
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+  }
+  .board-register:hover { background: #cbe0f0; }
+  .board-table-wrap { overflow-x: auto; }
+  .board-table {
+    min-width: 760px;
+    padding: 0 !important;
+    border: 1px solid #202b35 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+  .board-table th,
+  .board-table td {
+    padding: 9px 12px;
+    border: 1px solid #202b35;
+    color: #202b35;
+    vertical-align: middle;
+  }
+  .board-table th {
+    color: #202b35;
+    background: #f5f5f5;
+    font-size: 14px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .board-table td { background: #fff; font-size: 14px; }
+  .board-table .date-column { width: 128px; white-space: nowrap; }
+  .board-table .priority-column { width: 100px; text-align: center; }
+  .board-table .content-column { min-width: 420px; }
+  .board-table .detail-column { width: 84px; text-align: center; }
+  .board-table .action-column { width: 132px; text-align: center; }
+  .priority {
+    display: block;
+    margin: -9px -12px;
+    padding: 9px 12px;
+    font-weight: 700;
+  }
+  .priority-high { color: #111; background: #ff2424; }
+  .priority-low { background: #f8f8f8; }
+  .shelter-name { white-space: nowrap; }
+  .detail-link { color: #4e5963; text-decoration: none; }
+  .detail-link:hover { text-decoration: underline; }
+  .cancel-button {
+    padding: 7px 8px;
+    border: 1px solid #7d8790;
+    border-radius: 0;
+    color: #202b35;
+    background: #fff;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .cancel-button:hover { background: #f0f3f5; }
+  .empty-row { padding: 28px !important; text-align: center; }
+  @media (max-width: 640px) {
+    .board-page { width: 100%; }
+    .board-page > p { margin-bottom: 20px; }
+    .board-table-wrap { margin-right: -12px; margin-left: -12px; }
+  }
+</style>
+{% endblock %}
 
-<!-- 発信一覧 -->
-<h3>発信一覧</h3>
-{% if instructions %}
-<table border="1" cellpadding="5">
-  <tr>
-    <th>内容</th>
-  </tr>
-  {% for inst in instructions %}
-  <tr>
-    <td>{{ inst.content }}{% if inst.shelter %}（避難先: {{ inst.shelter }}）{% endif %}</td>
-  </tr>
-  {% endfor %}
-</table>
-{% else %}
-<p>登録されている指示はありません。</p>
-{% endif %}
+{% block content %}
+<div class="board-page">
+  <h2>指示・発信ボード</h2>
+  <p>住民向けの発信を登録・確認できます。</p>
+
+  <div class="board-toolbar">
+    <a class="board-register" href="{{ url_for('instruction_register') }}">新規登録</a>
+  </div>
+
+  <div class="board-table-wrap">
+    <table class="board-table">
+      <thead>
+        <tr>
+          <th class="date-column">通知日時</th>
+          <th class="priority-column">重要度</th>
+          <th class="content-column">内容</th>
+          <th class="detail-column">詳細設定</th>
+          <th class="action-column">通知操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if instructions %}
+          {% for inst in instructions %}
+          {% set priority = inst.priority|default('') %}
+          {% set is_high_priority = priority == '高' or (not priority and ('土砂災害' in inst.content or '危険' in inst.content)) %}
+          <tr>
+            <td class="date-column">{{ inst.created_at|default('日時未設定') }}</td>
+            <td class="priority-column">
+              <span class="priority {{ 'priority-high' if is_high_priority else 'priority-low' }}">
+                {{ priority if priority else ('高' if is_high_priority else '低') }}
+              </span>
+            </td>
+            <td class="content-column">
+              {{ inst.content }}{% if inst.shelter %}<span class="shelter-name">（避難先: {{ inst.shelter }}）</span>{% endif %}
+            </td>
+            <td class="detail-column"><a class="detail-link" href="#instruction-{{ inst.id }}">…</a></td>
+            <td class="action-column">
+              <button class="cancel-button" type="button">解除通知を送信</button>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td class="empty-row" colspan="5">登録されている指示はありません。</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

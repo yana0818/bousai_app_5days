@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}新規登録 - 防災アプリ{% endblock %}
+
+{% block head %}
+<style>
+  .instruction-register-page { width: min(100%, 950px); margin: 0 auto; }
+  .instruction-register-page h2 { margin-bottom: 0; }
+  .register-panel {
+    margin-top: 0;
+    padding: 36px 28px 34px;
+    border: 1px solid #eef2f6;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 5px 20px rgba(52, 79, 110, .08);
+  }
+  .instruction-register-page .register-form {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .form-row {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .form-label { padding-top: 9px; color: #202b35; font-size: 20px; font-weight: 500; }
+  .form-control,
+  .region-select {
+    width: 100%;
+    margin: 0;
+    padding: 11px 13px;
+    border: 1px solid #9aa4ad;
+    border-radius: 7px;
+    color: #202b35;
+    background: #fff;
+    font: inherit;
+  }
+  .form-control:focus,
+  .region-select:focus { outline: 3px solid #cfe0f5; border-color: #2457a6; }
+  .content-control { min-height: 104px; resize: vertical; }
+  .priority-options,
+  .age-options { display: grid; gap: 8px; padding-top: 7px; }
+  .choice-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #202b35;
+    font-size: 18px;
+    font-weight: 400;
+  }
+  .choice-label input { width: 18px; height: 18px; margin: 0; accent-color: #2457a6; }
+  .form-actions { display: flex; justify-content: center; gap: 18px; margin-top: 30px; }
+  .submit-button,
+  .back-link {
+    min-width: 170px;
+    padding: 11px 20px;
+    border: 1px solid #9aa4ad;
+    border-radius: 0;
+    text-align: center;
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .submit-button { color: #fff; background: #2457a6; }
+  .submit-button:hover { background: #1d4b96; }
+  .back-link { color: #244268; background: #fff; }
+  .back-link:hover { background: #f0f5fc; }
+  .form-error {
+    max-width: 680px;
+    margin: 0 auto 20px;
+    padding: 12px 16px;
+    border: 1px solid #c34d3e;
+    color: #a52f23;
+    background: #fff0ee;
+  }
+  @media (max-width: 640px) {
+    .register-panel { padding: 24px 16px; }
+    .form-row { grid-template-columns: 1fr; gap: 7px; margin-bottom: 19px; }
+    .form-label { padding-top: 0; font-size: 18px; }
+    .form-actions { flex-direction: column; align-items: stretch; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="instruction-register-page">
+  <h2>新規登録</h2>
+  <div class="register-panel">
+    {% if error %}
+      <p class="form-error" role="alert">{{ message }}</p>
+    {% endif %}
+
+    <form class="register-form" method="post">
+      <div class="form-row">
+        <label class="form-label" for="title">指示タイトル</label>
+        <input class="form-control" type="text" id="title" name="title" value="{{ form.get('title', '') }}" placeholder="（自由入力）" required>
+      </div>
+
+      <div class="form-row">
+        <label class="form-label" for="content">指示内容</label>
+        <textarea class="form-control content-control" id="content" name="content" placeholder="（自由入力）" required>{{ form.get('content', '') }}</textarea>
+      </div>
+
+      <div class="form-row">
+        <span class="form-label">重要度</span>
+        <div class="priority-options">
+          {% for value in ['低', '中', '高'] %}
+          <label class="choice-label">
+            <input type="radio" name="priority" value="{{ value }}" {% if form.get('priority') == value %}checked{% endif %} required>
+            {{ value }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label class="form-label" for="region">対象地域</label>
+        <select class="region-select" id="region" name="region">
+          <option value="">▼ 選択してください</option>
+          {% for region in regions %}
+          <option value="{{ region }}" {% if form.get('region') == region %}selected{% endif %}>{{ region }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-row">
+        <span class="form-label">対象年齢</span>
+        <div class="age-options">
+          {% for age_group in age_groups %}
+          <label class="choice-label">
+            <input type="checkbox" name="age_groups" value="{{ age_group }}">
+            {{ age_group }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a class="back-link" href="{{ url_for('board') }}">戻る</a>
+        <button class="submit-button" type="submit">送信</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

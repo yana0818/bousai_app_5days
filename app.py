@@ -406,6 +406,74 @@ def board():
     resident_instructions = [i for i in instructions if i.get('target') == '住民']
     return render_template('board.html', instructions=resident_instructions)
 
+# 指示登録ページ
+@app.route('/instruction_register', methods=['GET', 'POST'])
+@login_required
+def instruction_register():
+    regions = ['全地域', '佐久間', '柳谷']
+    age_groups = ['20代未満を含む', '20〜50代', '60代以上']
+
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        content = request.form.get('content', '').strip()
+        priority = request.form.get('priority', '').strip()
+        region = request.form.get('region', '').strip()
+        selected_age_groups = [
+            age_group for age_group in age_groups
+            if age_group in request.form.getlist('age_groups')
+        ]
+
+        if not title or not content or priority not in {'低', '中', '高'}:
+            return render_template(
+                'instruction_register.html',
+                error=True,
+                message='タイトル、内容、重要度を入力してください。',
+                regions=regions,
+                age_groups=age_groups,
+                form=request.form,
+            )
+
+        if region not in regions:
+            region = '全地域'
+
+        now = get_japan_time()
+        new_instruction = {
+            'id': max((instruction.get('id', 0) for instruction in instructions), default=0) + 1,
+            'target': '住民',
+            'title': title,
+            'content': content,
+            'priority': priority,
+            'region': region,
+            'age_groups': selected_age_groups,
+            'shelter': '',
+            'status': '発信中',
+            'created_at': now,
+            'updated_at': now,
+        }
+
+        instructions.insert(0, new_instruction)
+        try:
+            save_instructions()
+        except (OSError, TypeError, ValueError):
+            instructions.remove(new_instruction)
+            return render_template(
+                'instruction_register.html',
+                error=True,
+                message='指示を保存できませんでした。もう一度お試しください。',
+                regions=regions,
+                age_groups=age_groups,
+                form=request.form,
+            )
+
+        return redirect(url_for('board'))
+
+    return render_template(
+        'instruction_register.html',
+        regions=regions,
+        age_groups=age_groups,
+        form={},
+    )
+
 # 検索結果ページ：templates/search_results.html を返す
 @app.route('/search_results')
 def search_results():
