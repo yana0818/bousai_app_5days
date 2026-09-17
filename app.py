@@ -406,11 +406,45 @@ def board():
     resident_instructions = [i for i in instructions if i.get('target') == '住民']
     return render_template('board.html', instructions=resident_instructions)
 
+# 指示の詳細ページ（読み取り専用）
+@app.route('/instruction/<int:instruction_id>')
+@login_required
+def instruction_detail(instruction_id):
+    instruction = next(
+        (
+            item for item in instructions
+            if item.get('id') == instruction_id and item.get('target') == '住民'
+        ),
+        None,
+    )
+    if instruction is None:
+        return redirect(url_for('board'))
+
+    return render_template('instruction_detail.html', instruction=instruction)
+
+# 指示の解除通知を送信する
+@app.route('/instruction/<int:instruction_id>/cancel', methods=['POST'])
+@login_required
+def cancel_instruction(instruction_id):
+    instruction = next(
+        (
+            item for item in instructions
+            if item.get('id') == instruction_id and item.get('target') == '住民'
+        ),
+        None,
+    )
+    if instruction:
+        instruction['status'] = '解除'
+        instruction['updated_at'] = get_japan_time()
+        save_instructions()
+
+    return redirect(url_for('board'))
+
 # 指示登録ページ
 @app.route('/instruction_register', methods=['GET', 'POST'])
 @login_required
 def instruction_register():
-    regions = ['全地域', '佐久間', '柳谷']
+    regions = ['全地域', '北部', '南部']
     age_groups = ['20代未満を含む', '20〜50代', '60代以上']
 
     if request.method == 'POST':
@@ -423,13 +457,20 @@ def instruction_register():
             if age_group in request.form.getlist('age_groups')
         ]
 
-        if not title or not content or priority not in {'低', '中', '高'}:
+        if (
+            not title
+            or not content
+            or priority not in {'低', '中', '高'}
+            or region not in regions
+            or not selected_age_groups
+        ):
             return render_template(
                 'instruction_register.html',
                 error=True,
-                message='タイトル、内容、重要度を入力してください。',
+                message='タイトル、内容、重要度、対象地域、対象年齢をすべて入力してください。',
                 regions=regions,
                 age_groups=age_groups,
+                selected_age_groups=selected_age_groups,
                 form=request.form,
             )
 
@@ -462,6 +503,7 @@ def instruction_register():
                 message='指示を保存できませんでした。もう一度お試しください。',
                 regions=regions,
                 age_groups=age_groups,
+                selected_age_groups=selected_age_groups,
                 form=request.form,
             )
 
@@ -471,6 +513,7 @@ def instruction_register():
         'instruction_register.html',
         regions=regions,
         age_groups=age_groups,
+        selected_age_groups=[],
         form={},
     )
 

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}指示詳細 - 防災アプリ{% endblock %}
+
+{% block head %}
+<style>
+  .instruction-detail-page { width: min(100%, 950px); margin: 0 auto; }
+  .instruction-detail-page h2 { margin-bottom: 16px; }
+  .detail-panel {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 32px 28px;
+    border: 1px solid #eef2f6;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 5px 20px rgba(52, 79, 110, .08);
+  }
+  .detail-row {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  .detail-label { color: #202b35; font-size: 20px; font-weight: 500; }
+  .detail-value {
+    min-width: 0;
+    color: #244268;
+    font-size: 18px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .detail-status { font-weight: 700; }
+  .detail-actions { display: flex; justify-content: center; margin-top: 30px; }
+  .back-link {
+    min-width: 170px;
+    padding: 11px 20px;
+    border: 1px solid #9aa4ad;
+    border-radius: 7px;
+    color: #244268;
+    background: #fff;
+    text-align: center;
+    text-decoration: none;
+  }
+  .back-link:hover { background: #f0f5fc; }
+  @media (max-width: 640px) {
+    .detail-panel { padding: 24px 16px; }
+    .detail-row { grid-template-columns: 1fr; gap: 7px; margin-bottom: 19px; }
+    .detail-label { font-size: 18px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="instruction-detail-page">
+  <h2>指示詳細</h2>
+  <div class="detail-panel">
+    <div class="detail-row">
+      <div class="detail-label">指示タイトル</div>
+      <div class="detail-value">{{ instruction.title|default('未設定') }}</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">指示内容</div>
+      <div class="detail-value">{{ instruction.content|default('未設定') }}</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">重要度</div>
+      <div class="detail-value">{{ instruction.priority|default('未設定') }}</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">対象地域</div>
+      <div class="detail-value">{{ instruction.region|default('未設定') }}</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">対象年齢</div>
+      <div class="detail-value">{{ instruction.age_groups|default([], true)|join('、') or '未設定' }}</div>
+    </div>
+    <div class="detail-row">
+      <div class="detail-label">状態</div>
+      <div class="detail-value detail-status">{{ instruction.status|default('未設定') }}{% if instruction.status == '解除' %}【解除済み】{% endif %}</div>
+    </div>
+    <div class="detail-actions">
+      <a class="back-link" href="{{ url_for('board') }}">戻る</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

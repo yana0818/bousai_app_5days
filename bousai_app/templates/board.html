@@ -22,61 +22,88 @@
     text-decoration: none;
   }
   .board-register:hover { background: #cbe0f0; }
+  .board-table-wrap {
+    overflow: hidden;
+    border: 1px solid #eef2f6;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 5px 20px rgba(52, 79, 110, .08);
+  }
   .board-table-wrap { overflow-x: auto; }
   .board-table {
+    width: 100%;
     min-width: 760px;
     padding: 0 !important;
-    border: 1px solid #202b35 !important;
+    border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    background: white !important;
+    background: transparent !important;
   }
   .board-table th,
   .board-table td {
-    padding: 9px 12px;
-    border: 1px solid #202b35;
-    color: #202b35;
+    padding: 12px 14px;
+    border: 0;
+    border-bottom: 1px solid #edf1f5;
+    color: #244268;
     vertical-align: middle;
   }
   .board-table th {
-    color: #202b35;
-    background: #f5f5f5;
+    color: #fff;
+    background: #2457a6;
     font-size: 14px;
     text-align: center;
     white-space: nowrap;
   }
   .board-table td { background: #fff; font-size: 14px; }
+  .board-table tr:last-child td { border-bottom: 0; }
   .board-table .date-column { width: 128px; white-space: nowrap; }
   .board-table .priority-column { width: 100px; text-align: center; }
   .board-table .content-column { min-width: 420px; }
   .board-table .detail-column { width: 84px; text-align: center; }
-  .board-table .action-column { width: 132px; text-align: center; }
+  .board-table .action-column { width: 150px; text-align: center; }
   .priority {
     display: block;
     font-weight: 700;
   }
-  .board-table td.priority-high { background: #ff2424; }
-  .board-table td.priority-medium { background: #ffd966; }
-  .board-table td.priority-low { background: #f8f8f8; }
+  .board-table td.priority-high { color: #a52f23; background: #fff0ee; }
+  .board-table td.priority-medium { color: #8a6500; background: #fff8dc; }
+  .board-table td.priority-low { background: #f7f8fa; }
   .shelter-name { white-space: nowrap; }
+  .content-link {
+    color: inherit;
+    text-decoration: none;
+  }
+  .content-link:hover { color: #2457a6; text-decoration: underline; }
   .detail-link { color: #4e5963; text-decoration: none; }
   .detail-link:hover { text-decoration: underline; }
+  .board-table .action-column form {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
   .cancel-button {
     padding: 7px 8px;
-    border: 1px solid #7d8790;
-    border-radius: 0;
-    color: #202b35;
+    border: 1px solid #bfd0e3;
+    border-radius: 7px;
+    color: #244268;
     background: #fff;
     font: inherit;
     font-size: 12px;
     cursor: pointer;
   }
-  .cancel-button:hover { background: #f0f3f5; }
+  .cancel-button:hover { background: #f0f5fc; }
   .empty-row { padding: 28px !important; text-align: center; }
   @media (max-width: 640px) {
     .board-page { width: 100%; }
     .board-page > p { margin-bottom: 20px; }
-    .board-table-wrap { margin-right: -12px; margin-left: -12px; }
+    .board-table-wrap {
+      margin-right: -12px;
+      margin-left: -12px;
+      border-radius: 14px;
+    }
   }
 </style>
 {% endblock %}
@@ -115,11 +142,13 @@
               </span>
             </td>
             <td class="content-column">
-              {{ inst.content }}{% if inst.shelter %}<span class="shelter-name">（避難先: {{ inst.shelter }}）</span>{% endif %}
+              <a class="content-link" href="{{ url_for('instruction_detail', instruction_id=inst.id) }}">{{ inst.content }}{% if inst.shelter %}<span class="shelter-name">（避難先: {{ inst.shelter }}）</span>{% endif %}{% if inst.status == '解除' %}<span class="shelter-name">【解除済み】</span>{% endif %}</a>
             </td>
-            <td class="detail-column"><a class="detail-link" href="#instruction-{{ inst.id }}">…</a></td>
+            <td class="detail-column"><a class="detail-link" href="{{ url_for('instruction_detail', instruction_id=inst.id) }}">…</a></td>
             <td class="action-column">
-              <button class="cancel-button" type="button">解除通知を送信</button>
+              <form method="post" action="{{ url_for('cancel_instruction', instruction_id=inst.id) }}">
+                <button class="cancel-button" type="submit">解除通知を送信</button>
+              </form>
             </td>
           </tr>
           {% endfor %}
